@@ -3,12 +3,11 @@ package http
 import (
 	"fmt"
 	"github.com/Cepave/alarm/g"
+	. "github.com/Cepave/alarm/model/uic"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
 	"github.com/toolkits/file"
 	"log"
-
-	"sort"
 	"strings"
 	"time"
 )
@@ -30,11 +29,11 @@ func (this *MainController) Workdir() {
 }
 
 func (this *MainController) ConfigReload() {
-	remoteAddr := this.Ctx.Input.Request.RemoteAddr
+	remoteAddr := this.Ctx.Input.Context.Request.RemoteAddr
 	if strings.HasPrefix(remoteAddr, "127.0.0.1") {
 		g.ParseConfig(g.ConfigFile)
 		this.Data["json"] = g.Config()
-		this.ServeJson()
+		this.ServeJSON()
 	} else {
 		this.Ctx.WriteString("no privilege")
 	}
@@ -123,21 +122,12 @@ func CheckLoginStatusByCookie(sig string) bool {
 }
 
 func (this *MainController) Index() {
-
-	if false == g.Config().Debug {
-		sig := this.Ctx.GetCookie("sig")
-		isLoggedIn := CheckLoginStatusByCookie(sig)
-		if !isLoggedIn {
-			RedirectUrl := g.Config().RedirectUrl
-			this.Redirect(RedirectUrl, 302)
-		}
+	if checkLogin(this) == false {
+		return
 	}
-
-	events := g.Events.Clone()
-
 	defer func() {
 		this.Data["Now"] = time.Now().Unix()
-		this.TplNames = "index.html"
+		this.TplName = "index.html"
 		this.Data["FalconPortal"] = g.Config().Shortcut.FalconPortal
 		this.Data["FalconDashboard"] = g.Config().Shortcut.FalconDashboard
 		this.Data["GrafanaDashboard"] = g.Config().Shortcut.GrafanaDashboard
@@ -145,28 +135,15 @@ func (this *MainController) Index() {
 		this.Data["FalconUIC"] = g.Config().Shortcut.FalconUIC
 	}()
 
-	if len(events) == 0 {
-		this.Data["Events"] = []*g.EventDto{}
+	this.Data["Events"] = g.Events.CloneToOrderedEvents()
+}
+
+func (this *MainController) Event() {
+	if checkLogin(this) == false {
 		return
 	}
-
-	count := len(events)
-	if count == 0 {
-		this.Data["Events"] = []*g.EventDto{}
-		return
-	}
-
-	// 按照持续时间排序
-	beforeOrder := make([]*g.EventDto, count)
-	i := 0
-	for _, event := range events {
-		beforeOrder[i] = event
-		i++
-	}
-
-	sort.Sort(g.OrderedEvents(beforeOrder))
-	this.Data["Events"] = beforeOrder
-
+	this.Data["json"] = g.Events.CloneToOrderedEvents()
+	this.ServeJSON()
 }
 
 func (this *MainController) Solve() {
@@ -182,4 +159,20 @@ func (this *MainController) Solve() {
 	}
 
 	this.Ctx.WriteString("")
+}
+
+func checkLogin(m *MainController) bool {
+	// Skip the login check in debug mode.
+	if g.Config().Debug {
+		return true
+	}
+
+	sig := m.Ctx.GetCookie("sig")
+	isLoggedIn := CheckLoginStatusByCookie(sig)
+	if !isLoggedIn {
+		RedirectUrl := g.Config().RedirectUrl
+		m.Redirect(RedirectUrl, 302)
+		return false
+	}
+	return true
 }
