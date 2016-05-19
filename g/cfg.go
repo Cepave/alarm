@@ -2,10 +2,10 @@ package g
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/toolkits/file"
 	"log"
 	"sync"
-
-	"github.com/toolkits/file"
 )
 
 type HttpConfig struct {
@@ -19,12 +19,6 @@ type QueueConfig struct {
 	Mail       string `json:"mail"`
 	QQ         string `json:"qq"`
 	Serverchan string `json:"serverchan"`
-}
-
-type FalconPortalConfig struct {
-	Addr string `json:"addr"`
-	Idle int    `json:"idle"`
-	Max  int    `json:"max"`
 }
 
 type RedisConfig struct {
@@ -44,10 +38,27 @@ type ApiConfig struct {
 	Links  string `json:"links"`
 }
 
+type DatabaseConfig struct {
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	Protocol string `json:"protocol"`
+	Account  string `json:"account"`
+	Password string `json:"password"`
+	Options  string `json:"options"`
+}
+
 type UicConfig struct {
-	Addr string `json:"addr"`
-	Idle int    `json:"idle"`
-	Max  int    `json:"max"`
+	Addr  string `json:"addr"`
+	Table string `json:"table"`
+	Idle  int    `json:"idle"`
+	Max   int    `json:"max"`
+}
+
+type FalconPortalConfig struct {
+	Addr  string `json:"addr"`
+	Table string `json:"table"`
+	Idle  int    `json:"idle"`
+	Max   int    `json:"max"`
 }
 
 type ShortcutConfig struct {
@@ -61,12 +72,13 @@ type GlobalConfig struct {
 	Debug        bool                `json:"debug"`
 	UicToken     string              `json:"uicToken"`
 	Http         *HttpConfig         `json:"http"`
-	FalconPortal *FalconPortalConfig `json:"falcon_portal"`
 	Queue        *QueueConfig        `json:"queue"`
 	Redis        *RedisConfig        `json:"redis"`
 	Api          *ApiConfig          `json:"api"`
 	Shortcut     *ShortcutConfig     `json:"shortcut"`
+	Db           *DatabaseConfig     `json:"db"`
 	Uic          *UicConfig          `json:"uic"`
+	FalconPortal *FalconPortalConfig `json:"falcon_portal"`
 	RedirectUrl  string              `json:"redirectUrl"`
 }
 
@@ -103,7 +115,13 @@ func ParseConfig(cfg string) {
 	if err != nil {
 		log.Fatalln("parse config file:", cfg, "fail:", err)
 	}
-
+	db := c.Db
+	uicdb := c.Uic
+	fpdb := c.FalconPortal
+	uicdb.Addr = fmt.Sprintf("%s:%s@%s(%s:%d)/%s?%s", db.Account, db.Password, db.Protocol, db.Host, db.Port, uicdb.Table, db.Options)
+	fpdb.Addr = fmt.Sprintf("%s:%s@%s(%s:%d)/%s?%s", db.Account, db.Password, db.Protocol, db.Host, db.Port, fpdb.Table, db.Options)
+	c.Uic = uicdb
+	c.FalconPortal = fpdb
 	configLock.Lock()
 	defer configLock.Unlock()
 	config = &c

@@ -11,12 +11,7 @@
         "qq": "/qq",
         "serverchan": "/serverchan"
     },
-    "falcon_portal": {
-        "addr": "root@tcp(mysql:3306)/falcon_portal?charset=utf8&loc=Asia%2FChongqing",
-        "idle": 10,
-        "max": 100
-    },
-    "redis": {
+   "redis": {
         "addr": "127.0.0.1:6379",
         "maxIdle": 5,
         "highQueues": [
@@ -47,8 +42,21 @@
         "falconAlarm": "http://127.0.0.1:9912/",
         "falconUIC": "http://127.0.0.1:1234/"
     },
+    "db": {
+        "host":  "127.0.0.1",
+        "port": 3306,
+        "protocol": "tcp",
+        "account": "root",
+        "password": "password",
+        "options": "charset=utf8&loc=Asia%2FTaipei"
+    },
     "uic": {
-        "addr": "root:@tcp(127.0.0.1:3306)/uic?charset=utf8&loc=Asia%2FTaipei",
+        "table": "uic",
+        "idle": 10,
+        "max": 100
+    },
+    "falcon_portal": {
+        "table": "falcon_portal",
         "idle": 10,
         "max": 100
     },
