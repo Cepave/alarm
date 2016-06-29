@@ -139,9 +139,6 @@ func (this *MainController) Index() {
 }
 
 func (this *MainController) Event() {
-	if checkLogin(this) == false {
-		return
-	}
 	this.Data["json"] = g.Events.CloneToOrderedEvents()
 	this.ServeJSON()
 }
